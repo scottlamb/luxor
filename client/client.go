@@ -4,10 +4,10 @@ package client
 
 import (
 	"bytes"
-	"code.google.com/p/go.net/context"
 	"encoding/json"
 	"fmt"
 	"github.com/scottlamb/luxor/protocol"
+	"golang.org/x/net/context"
 	"io/ioutil"
 	"net/http"
 	"time"
