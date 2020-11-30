@@ -5,7 +5,7 @@
 package main
 
 import (
-	"code.google.com/p/go.net/context"
+	"golang.org/x/net/context"
 	"encoding/json"
 	"flag"
 	"fmt"
