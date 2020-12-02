@@ -48,6 +48,7 @@ package protocol
 import (
 	"errors"
 	"fmt"
+
 	"golang.org/x/net/context"
 )
 
@@ -202,9 +203,10 @@ type FlashLightsResponse struct {
 }
 
 type Group struct {
-	GroupNumber uint8
-	Intensity   uint8
-	Name        string
+	Name        string `json:"Name"`
+	GroupNumber uint8  `json:"Grp"`
+	Intensity   uint8  `json:"Inten"`
+	Color       uint8  `json:"Colr"`
 }
 
 type GroupListAddRequest struct {
