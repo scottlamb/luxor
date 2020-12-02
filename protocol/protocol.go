@@ -89,6 +89,9 @@ type Controller interface {
 	// GroupListRename renames a group.
 	GroupListRename(ctx context.Context, request *GroupListRenameRequest) (response *GroupListRenameResponse, err error)
 
+	// GroupListEdit updates a group values (intensity, color).
+	GroupListEdit(ctx context.Context, request *GroupListEditRequest) (response *GroupListEditResponse, err error)
+
 	// GroupListReorder reorders groups.
 	GroupListReorder(ctx context.Context, request *GroupListReorderRequest) (response *GroupListReorderResponse, err error)
 
@@ -257,6 +260,22 @@ type GroupListRenameRequest struct {
 
 type GroupListRenameResponse struct {
 	// Status will be StatusGroupNameInUse if the name is taken.
+	Status int
+}
+
+// GroupListEditRequest allows editing/saving of Group number and color assignments
+// For updating only the name, use GroupListRename
+// For updating all at the same time, call Rename first and (on success),
+// use the Name key to then call Edit.
+type GroupListEditRequest struct {
+	Name        string
+	GroupNumber uint8
+	Color       uint8
+}
+
+// GroupListEditResponse -- response counterpart
+type GroupListEditResponse struct {
+	// Status will be StatusPreconditionFailed if the name does not exist.
 	Status int
 }
 
