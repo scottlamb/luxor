@@ -6,11 +6,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/scottlamb/luxor/protocol"
-	"golang.org/x/net/context"
 	"io/ioutil"
 	"net/http"
 	"time"
+
+	"github.com/scottlamb/luxor/protocol"
+	"golang.org/x/net/context"
 )
 
 // *Controller implements protocol.Controller
@@ -167,6 +168,14 @@ func (c *Controller) GroupListGet(ctx context.Context, req *protocol.GroupListGe
 func (c *Controller) GroupListRename(ctx context.Context, req *protocol.GroupListRenameRequest) (*protocol.GroupListRenameResponse, error) {
 	resp := &protocol.GroupListRenameResponse{}
 	if err := c.request(ctx, "GroupListRename", req, resp); err != nil {
+		return nil, err
+	}
+	return resp, protocol.ErrorForStatus(resp.Status)
+}
+
+func (c *Controller) GroupListEdit(ctx context.Context, req *protocol.GroupListEditRequest) (*protocol.GroupListEditResponse, error) {
+	resp := &protocol.GroupListEditResponse{}
+	if err := c.request(ctx, "GroupListEdit", req, resp); err != nil {
 		return nil, err
 	}
 	return resp, protocol.ErrorForStatus(resp.Status)
