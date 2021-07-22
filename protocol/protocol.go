@@ -46,9 +46,9 @@
 package protocol
 
 import (
+	"context"
 	"errors"
 	"fmt"
-	"golang.org/x/net/context"
 )
 
 type Controller interface {

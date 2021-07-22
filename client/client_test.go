@@ -1,9 +1,9 @@
 package client_test
 
 import (
+	"context"
 	"github.com/scottlamb/luxor/client"
 	"github.com/scottlamb/luxor/protocol"
-	"golang.org/x/net/context"
 	"io"
 	"io/ioutil"
 	"net/http"

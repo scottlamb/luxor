@@ -4,7 +4,7 @@
 package main
 
 import (
-	"golang.org/x/net/context"
+	"context"
 	"github.com/scottlamb/luxor/client"
 	"github.com/scottlamb/luxor/protocol"
 )

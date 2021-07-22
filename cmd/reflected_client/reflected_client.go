@@ -5,7 +5,7 @@
 package main
 
 import (
-	"golang.org/x/net/context"
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -38,7 +38,7 @@ func main() {
 	}
 
 	ctx := context.Background()
-	controller := reflect.ValueOf(&client.Controller{*baseURL})
+	controller := reflect.ValueOf(&client.Controller{BaseURL: *baseURL})
 	subcommandName := args[0]
 	subcommand := controller.MethodByName(subcommandName)
 	if !subcommand.IsValid() {
