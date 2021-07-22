@@ -10,7 +10,6 @@ import (
 	"github.com/scottlamb/luxor/protocol"
 	"io/ioutil"
 	"net/http"
-	"time"
 )
 
 // *Controller implements protocol.Controller
@@ -26,76 +25,32 @@ func (c *Controller) request(ctx context.Context, method string, request interfa
 	if err != nil {
 		return err
 	}
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	default:
-	}
-	timeout := time.Duration(0)
-	deadline, deadlineOk := ctx.Deadline()
-	if deadlineOk {
-		timeout = deadline.Sub(time.Now())
-		if timeout <= 0 {
-			// The HTTP client only respects values > 0, so this
-			// needs to be handled specially to be effective.
-			// Just return now.
-			return context.Canceled
-		}
-	}
-	resultChannel := make(chan httpResult, 1)
-	go c.doPost(c.BaseURL+"/"+method+".json", timeout, serializedReq, resultChannel)
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case result := <-resultChannel:
-		if result.err != nil {
-			return result.err
-		}
-		err = json.Unmarshal(result.body, response)
-		if err != nil {
-			return fmt.Errorf("JSON error: %v while parsing body: %q", err, result.body)
-		}
-		return nil
-	}
-}
-
-// httpResult is a type used to communicate from doPost back to request.
-type httpResult struct {
-	body []byte
-	err  error
-}
-
-// doPost is a helper for request which does the actual HTTP IO.
-// It should be run in a separate goroutine so that the caller can support
-// cancellation.
-func (c *Controller) doPost(url string, timeout time.Duration, requestBody []byte, result chan<- httpResult) {
-	res := httpResult{}
-	httpClient := http.Client{Timeout: timeout}
-	httpResp, err := httpClient.Post(url, "application/json", bytes.NewReader(requestBody))
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", c.BaseURL+"/"+method+".json", bytes.NewReader(serializedReq))
 	if err != nil {
-		res.err = err
-		result <- res
-		return
+		return err
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpResp, err := http.DefaultClient.Do(httpReq)
+	if err != nil {
+		return err
 	}
 	defer httpResp.Body.Close()
 	body, err := ioutil.ReadAll(httpResp.Body)
 	if err != nil {
-		res.err = err
-		result <- res
-		return
+		return err
 	}
 	if httpResp.StatusCode != http.StatusOK {
-		res.err = fmt.Errorf("Unexpected HTTP status: %q with body: %q", httpResp.Status, body)
-		result <- res
-		return
+		return fmt.Errorf("Unexpected HTTP status: %q with body: %q", httpResp.Status, body)
 	}
 	if contentType := httpResp.Header.Get("Content-Type"); contentType != "application/json" {
-		res.err = fmt.Errorf("Unexpected response content type: %q with body: %q", contentType, body)
-		result <- res
-		return
+		return fmt.Errorf("Unexpected response content type: %q with body: %q", contentType, body)
 	}
-	res.body = body
-	result <- res
+
+	err = json.Unmarshal(body, response)
+	if err != nil {
+		return fmt.Errorf("JSON error: %v while parsing body: %q", err, body)
+	}
+	return nil
 }
 
 // The methods below are all boilerplate.

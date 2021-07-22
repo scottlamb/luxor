@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -64,39 +65,24 @@ func TestSuccessfulThemeGet(t *testing.T) {
 func TestAlreadyCanceled(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	c := &client.Controller{BaseURL: ""}
+	c := &client.Controller{BaseURL: "http://localhost:0/"}
 	_, err := c.GroupListGet(ctx, &protocol.GroupListGetRequest{})
-	if err != context.Canceled {
+	if err.(*url.Error).Unwrap() != context.Canceled {
 		t.Errorf("expected canceled; got %v", err)
 	}
 }
 
-// A context which has a Deadline but does not become Done when it passes.
-type deadlineContext time.Time
-
-func (c deadlineContext) Deadline() (deadline time.Time, ok bool) {
-	return time.Time(c), true
-}
-
-func (c deadlineContext) Done() <-chan struct{} {
-	return make(chan struct{})
-}
-
-func (c deadlineContext) Err() error {
-	return nil
-}
-
-func (c deadlineContext) Value(key interface{}) interface{} {
-	return nil
-}
-
 func TestHttpTimeoutLe0(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		panic("should not issue request")
+	}))
 	defer server.Close()
 	c := &client.Controller{BaseURL: server.URL}
 	req := &protocol.ThemeGetRequest{ThemeIndex: 0}
-	_, err := c.ThemeGet(deadlineContext(time.Time{}), req)
-	if err != context.Canceled {
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now())
+	defer cancel()
+	_, err := c.ThemeGet(ctx, req)
+	if err.(*url.Error).Unwrap() != context.DeadlineExceeded {
 		t.Errorf("expected canceled; got %v", err)
 	}
 }
@@ -112,8 +98,10 @@ func TestHttpTimeoutGt0(t *testing.T) {
 	}))
 	defer server.Close()
 	c := &client.Controller{BaseURL: server.URL}
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Second))
+	defer cancel()
 	req := &protocol.ThemeGetRequest{ThemeIndex: 0}
-	_, err := c.ThemeGet(deadlineContext(time.Now().Add(time.Second)), req)
+	_, err := c.ThemeGet(ctx, req)
 	close(requestDone)
 	if err == nil {
 		t.Error("should have failed")
@@ -136,7 +124,7 @@ func TestCanceledWhileWaiting(t *testing.T) {
 	req := &protocol.ThemeGetRequest{ThemeIndex: 0}
 	_, err := c.ThemeGet(ctx, req)
 	close(requestDone)
-	if err != context.Canceled {
+	if err.(*url.Error).Unwrap() != context.Canceled {
 		t.Errorf("expected canceled; got %v", err)
 	}
 }
